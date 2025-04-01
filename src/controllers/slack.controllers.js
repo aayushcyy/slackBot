@@ -1,5 +1,8 @@
 import axios from "axios";
-import { openApprovalModal } from "../services/slackService.js";
+import {
+  openApprovalModal,
+  sendSlackMessage,
+} from "../services/slackService.js";
 
 // 1. slack event controller
 const slackEventController = async (req, res) => {
@@ -33,4 +36,24 @@ const handleSlashCommand = async (req, res) => {
   }
 };
 
-export { slackEventController, handleSlashCommand };
+// 3. handling action after the approver clicks a button
+const handleAction = async (req, res) => {
+  try {
+    const payload = JSON.parse(req.body.payload);
+    const action = payload.actions[0].value;
+    const requesterId = payload.user.id;
+
+    const message =
+      action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
+
+    // Notifying the requester
+    await sendSlackMessage(requesterId, message);
+
+    return res.status(200).send();
+  } catch (error) {
+    console.error("Error handling actions:", error);
+    return res.status(500).send("Internal Server Error");
+  }
+};
+
+export { slackEventController, handleSlashCommand, handleAction };

@@ -1,5 +1,5 @@
 import express from "express";
-import { slackEventController } from "../controllers/slackEvent.controller.js";
+import { slackEventController } from "../controllers/slack.controllers.js";
 import { verifySlackRequest } from "../middlewares/verifySlackRequest.js";
 
 const router = express.Router();

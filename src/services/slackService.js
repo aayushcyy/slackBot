@@ -39,4 +39,15 @@ const openApprovalModal = async (triggerId) => {
   });
 };
 
-export { openApprovalModal };
+const sendSlackMessage = async (userId, text) => {
+  const messagePayload = {
+    channel: userId,
+    text: text,
+  };
+
+  await axios.post("https://slack.com/api/chat.postMessage", messagePayload, {
+    headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
+  });
+};
+
+export { openApprovalModal, sendSlackMessage };
