@@ -1,4 +1,5 @@
 import axios from "axios";
+import { openApprovalModal } from "../services/slackService.js";
 
 // 1. slack event controller
 const slackEventController = async (req, res) => {
@@ -16,10 +17,14 @@ const slackEventController = async (req, res) => {
 // 2. slash command controller
 const handleSlashCommand = async (req, res) => {
   try {
-    const triggerId = req.body.trigger_Id;
+    const triggerId = req.body.trigger_id;
+
+    if (!triggerId) {
+      return res.status(400).send("Missing trigger_id from Slack request");
+    }
 
     // open slack model
-    await slackService.openApprovalModal(triggerId);
+    await openApprovalModal(triggerId);
 
     return res.status(200).send();
   } catch (error) {
