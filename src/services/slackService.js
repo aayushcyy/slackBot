@@ -50,4 +50,46 @@ const sendSlackMessage = async (userId, text) => {
   });
 };
 
-export { openApprovalModal, sendSlackMessage };
+const sendApprovalRequest = async (approverId, requesterId, approvalText) => {
+  const messagePayload = {
+    channel: approverId,
+    text: `Approval request from <@${requesterId}>:\n${approvalText}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `Approval request from <@${requesterId}>:\n${approvalText}`,
+        },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Approve" },
+            style: "primary",
+            value: "approve",
+            action_id: "approve_action",
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Reject" },
+            style: "danger",
+            value: "reject",
+            action_id: "reject_action",
+          },
+        ],
+      },
+    ],
+  };
+
+  await axios.post("https://slack.com/api/chat.postMessage", messagePayload, {
+    headers: {
+      Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export { openApprovalModal, sendSlackMessage, sendApprovalRequest };

@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   openApprovalModal,
   sendSlackMessage,
+  sendApprovalRequest,
 } from "../services/slackService.js";
 
 // 1. slack event controller
@@ -51,36 +52,58 @@ const handleAction = async (req, res) => {
 
     // logs only for production
     console.log("Parsed payload:", payload);
-    if (
-      !payload.actions ||
-      !Array.isArray(payload.actions) ||
-      payload.actions.length === 0
-    ) {
-      console.error("22. Error: No actions found in payload.");
-      return res.status(400).send("Invalid payload: No actions found.");
+
+    // Handle modal submission
+    if (payload.type === "view_submission") {
+      // Extract data from the modal
+      const values = payload.view.state.values;
+      const approverId = values.approver.approver_selected.selected_user;
+      const approvalText = values.approval_text.approval_text_input.value;
+      const requesterId = payload.user.id;
+
+      // Send the approval request to the approver
+      await sendApprovalRequest(approverId, requesterId, approvalText);
+
+      // Acknowledge the modal submission to Slack
+      return res.status(200).json({
+        response_action: "clear", // Closes the modal
+      });
     }
 
-    const action = payload.actions[0].value;
+    // Handle button actions (Approve/Reject)
+    if (payload.type === "block_actions") {
+      if (
+        !payload.actions ||
+        !Array.isArray(payload.actions) ||
+        payload.actions.length === 0
+      ) {
+        console.error("22. Error: No actions found in payload.");
+        return res.status(400).send("Invalid payload: No actions found.");
+      }
 
-    // log only for production
-    console.log("Processing action:", action);
+      const action = payload.actions[0].value;
+      console.log("Processing action:", action);
 
-    const requesterId = payload.user.id;
-    const responseUrl = payload.response_url;
+      const requesterId = payload.user.id;
+      const responseUrl = payload.response_url;
 
-    const message =
-      action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
+      const message =
+        action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
 
-    // Notifying the requester about confirmation/rejection
-    await sendSlackMessage(requesterId, message);
+      // Notify the requester
+      await sendSlackMessage(requesterId, message);
 
-    // ✅ **Modify the original message in Slack**
-    await axios.post(responseUrl, {
-      replace_original: "true",
-      text: `User <@${requesterId}> has ${action}d the request.`,
-    });
+      // Update the original message in Slack
+      await axios.post(responseUrl, {
+        replace_original: "true",
+        text: `User <@${requesterId}> has ${action}d the request.`,
+      });
 
-    return res.status(200).send();
+      return res.status(200).send();
+    }
+
+    // If the payload type is neither view_submission nor block_actions
+    return res.status(400).send("Unsupported payload type");
   } catch (error) {
     console.error("Error handling actions:", error);
     return res.status(500).send("Internal Server Error");
