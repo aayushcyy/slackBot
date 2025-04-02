@@ -42,8 +42,26 @@ const handleSlashCommand = async (req, res) => {
 // 3. handling action after the approver clicks a button
 const handleAction = async (req, res) => {
   try {
+    // log only for production
+    console.log("11. Received action payload:", req.body);
+
     const payload = JSON.parse(req.body.payload);
+
+    // logs only for production
+    console.log("Parsed payload:", payload);
+    if (
+      !payload.actions ||
+      !Array.isArray(payload.actions) ||
+      payload.actions.length === 0
+    ) {
+      console.error("22. Error: No actions found in payload.");
+      return res.status(400).send("Invalid payload: No actions found.");
+    }
+
     const action = payload.actions[0].value;
+
+    // log only for production
+    console.log("Processing action:", action);
     const requesterId = payload.user.id;
 
     const message =

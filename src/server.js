@@ -8,15 +8,15 @@ const app = express();
 
 app.use(cors({ origin: "*", credentials: true }));
 
-// Use express.raw() only for Slack verification
-app.use("/api/slack/command", express.raw({ type: "application/json" }));
-app.use("/api/slack/actions", express.raw({ type: "application/json" }));
-
 // Body parsers for other routes
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // General JSON parsing for all routes
 
-// development middleware
+// Use express.raw() only for Slack verification
+app.use("/api/slack/command", express.urlencoded({ extended: true }));
+app.use("/api/slack/actions", express.urlencoded({ extended: true }));
+
+// development log middleware
 app.use((req, res, next) => {
   console.log("Received request:", req.method, req.url, req.headers);
   next();
