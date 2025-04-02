@@ -20,13 +20,14 @@ const slackEventController = async (req, res) => {
 // 2. slash command controller
 const handleSlashCommand = async (req, res) => {
   try {
+    console.log("Received Slack command:", req.body);
     const triggerId = req.body.trigger_id;
 
     if (!triggerId) {
       return res.status(400).send("Missing trigger_id from Slack request");
     }
-    console.log("Slash command received:", req.body);
-    res.status(200).send();
+    console.log("2. Slash command received:", req.body);
+    res.status(200).send("Processing your request...");
 
     // open slack model
     await openApprovalModal(triggerId);

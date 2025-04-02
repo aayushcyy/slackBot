@@ -2,8 +2,11 @@ import express from "express";
 import "dotenv/config";
 import bodyParser from "body-parser";
 import slackEventRouter from "./routes/slack.route.js";
+import cors from "cors";
 
 const app = express();
+
+app.use(cors({ origin: "*", credentials: true }));
 
 // Use express.raw() only for Slack verification
 app.use("/api/slack/command", express.raw({ type: "application/json" }));
