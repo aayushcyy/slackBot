@@ -16,6 +16,12 @@ app.use("/api/slack/actions", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// development middleware
+app.use((req, res, next) => {
+  console.log("Received request:", req.method, req.url, req.headers);
+  next();
+});
+
 // Slack event subscription route
 app.use("/", slackEventRouter);
 
