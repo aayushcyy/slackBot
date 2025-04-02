@@ -1,11 +1,12 @@
 import axios from "axios";
 
-const openApprovalModal = async (triggerId) => {
+const openApprovalModal = async (triggerId, responseUrl) => {
   const modalPayload = {
     trigger_id: triggerId,
     view: {
       type: "modal",
       callback_id: "approval_request",
+      private_metadata: JSON.stringify({ response_url: responseUrl }),
       title: { type: "plain_text", text: "Approval Request" },
       blocks: [
         {
@@ -45,12 +46,40 @@ const sendSlackMessage = async (userId, text) => {
     text: text,
   };
 
-  await axios.post("https://slack.com/api/chat.postMessage", messagePayload, {
-    headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` },
-  });
+  try {
+    const response = await axios.post(
+      "https://slack.com/api/chat.postMessage",
+      messagePayload,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.data.ok) {
+      console.error(
+        "Failed to send Slack message:",
+        response.data.error,
+        response.data
+      );
+      throw new Error(`Failed to send Slack message: ${response.data.error}`);
+    }
+
+    console.log(`Successfully sent message to user ${userId}`);
+  } catch (error) {
+    console.error(`Error sending Slack message to ${userId}:`, error.message);
+    throw error;
+  }
 };
 
-const sendApprovalRequest = async (approverId, requesterId, approvalText) => {
+const sendApprovalRequest = async (
+  approverId,
+  requesterId,
+  approvalText,
+  responseUrl
+) => {
   const messagePayload = {
     channel: approverId,
     text: `Approval request from <@${requesterId}>:\n${approvalText}`,
@@ -84,12 +113,27 @@ const sendApprovalRequest = async (approverId, requesterId, approvalText) => {
     ],
   };
 
-  await axios.post("https://slack.com/api/chat.postMessage", messagePayload, {
-    headers: {
-      Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await axios.post(
+    "https://slack.com/api/chat.postMessage",
+    messagePayload,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.data.ok) {
+    console.error(
+      "Failed to send approval request:",
+      response.data.error,
+      response.data
+    );
+    throw new Error(`Failed to send approval request: ${response.data.error}`);
+  }
+
+  return { messageTs: response.data.ts, responseUrl };
 };
 
 export { openApprovalModal, sendSlackMessage, sendApprovalRequest };

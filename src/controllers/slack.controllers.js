@@ -23,6 +23,7 @@ const handleSlashCommand = async (req, res) => {
   try {
     console.log("Received Slack command:", JSON.stringify(req.body, null, 2));
     const triggerId = req.body.trigger_id;
+    const responseUrl = req.body.response_url;
 
     if (!triggerId) {
       return res.status(400).send("Missing trigger_id from Slack request");
@@ -33,7 +34,7 @@ const handleSlashCommand = async (req, res) => {
     res.status(200).send("Processing your request...");
 
     // open slack model
-    await openApprovalModal(triggerId);
+    await openApprovalModal(triggerId, responseUrl);
 
     return res.status(200).send();
   } catch (error) {
@@ -60,9 +61,18 @@ const handleAction = async (req, res) => {
       const approverId = values.approver.approver_selected.selected_user;
       const approvalText = values.approval_text.approval_text_input.value;
       const requesterId = payload.user.id;
+      const responseUrl = JSON.parse(
+        payload.view.private_metadata
+      ).response_url;
 
       // Send the approval request to the approver
-      await sendApprovalRequest(approverId, requesterId, approvalText);
+      const { messageTs, responseUrl: returnedResponseUrl } =
+        await sendApprovalRequest(
+          approverId,
+          requesterId,
+          approvalText,
+          responseUrl
+        );
 
       // Acknowledge the modal submission to Slack
       return res.status(200).json({
@@ -84,20 +94,35 @@ const handleAction = async (req, res) => {
       const action = payload.actions[0].value;
       console.log("Processing action:", action);
 
-      const requesterId = payload.user.id;
+      const approverId = payload.user.id;
+      const requesterId = payload.message.text.match(/<@(.+?)>/)[1];
       const responseUrl = payload.response_url;
 
       const message =
         action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
 
       // Notify the requester
-      await sendSlackMessage(requesterId, message);
+      try {
+        await sendSlackMessage(requesterId, message);
+      } catch (error) {
+        console.error(`Failed to notify requester ${requesterId}:`, error);
+        // Fallback: Notify in the channel where the command was run (optional)
+        await sendSlackMessage(
+          payload.channel.id,
+          `Failed to notify <@${requesterId}> directly. Approval result: ${message}`
+        );
+      }
 
       // Update the original message in Slack
       await axios.post(responseUrl, {
         replace_original: "true",
         text: `User <@${requesterId}> has ${action}d the request.`,
       });
+
+      await sendSlackMessage(
+        "C08KZTK985U", // The channel where the command was run
+        `Approval result for <@${requesterId}>: ${message}`
+      );
 
       return res.status(200).send();
     }

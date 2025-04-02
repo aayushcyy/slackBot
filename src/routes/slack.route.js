@@ -9,7 +9,7 @@ import { verifySlackRequest } from "../middlewares/verifySlackRequest.js";
 const router = express.Router();
 
 router.post("/", slackEventController);
-// add the middleware(verifySlackRequest) in below both routes
+// add the middleware(verifySlackRequest) in below both routes only for development
 router.post("/api/slack/command", handleSlashCommand);
 router.post("/api/slack/actions", handleAction);
 
