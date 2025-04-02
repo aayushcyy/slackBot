@@ -64,13 +64,21 @@ const handleAction = async (req, res) => {
 
     // log only for production
     console.log("Processing action:", action);
+
     const requesterId = payload.user.id;
+    const responseUrl = payload.response_url;
 
     const message =
       action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
 
-    // Notifying the requester
+    // Notifying the requester about confirmation/rejection
     await sendSlackMessage(requesterId, message);
+
+    // ✅ **Modify the original message in Slack**
+    await axios.post(responseUrl, {
+      replace_original: "true",
+      text: `User <@${requesterId}> has ${action}d the request.`,
+    });
 
     return res.status(200).send();
   } catch (error) {
