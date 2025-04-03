@@ -52,10 +52,12 @@ const handleSlashCommand = async (req, res) => {
 // 3. handling action after the approver clicks a button
 const handleAction = async (req, res) => {
   try {
+    const parsedBody = querystring.parse(req.body.toString());
+
     // log only for production
     console.log("11. Received action payload:", req.body);
 
-    const payload = JSON.parse(req.body.payload);
+    const payload = JSON.parse(parsedBody.payload);
 
     // logs only for production
     console.log("Parsed payload:", payload);
