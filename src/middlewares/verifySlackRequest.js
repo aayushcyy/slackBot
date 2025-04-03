@@ -13,9 +13,13 @@ const verifySlackRequest = (req, res, next) => {
     return res.status(400).send("Request timestamp too old");
   }
 
-  // Convert body to string only if it's a Buffer
-  const rawBody =
-    typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  // Ensure req.body is a Buffer (from express.raw)
+  if (!Buffer.isBuffer(req.body)) {
+    return res.status(400).send("Invalid request body format");
+  }
+
+  // Convert the raw body Buffer to a string
+  const rawBody = req.body.toString("utf8");
 
   // Create signature base string
   const sigBaseString = `v0:${timestamp}:${rawBody}`;

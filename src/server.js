@@ -8,15 +8,24 @@ const app = express();
 
 app.use(cors({ origin: "*", credentials: true }));
 
-// Body parsers for other routes
-app.use(express.urlencoded({ extended: true }));
+// General body parsers for other routes
 app.use(express.json()); // General JSON parsing for all routes
 
-// Use express.raw() only for Slack verification
+// Use express.raw() for Slack routes to capture the raw body
+app.use(
+  "/api/slack/command",
+  express.raw({ type: "application/x-www-form-urlencoded" })
+);
+app.use(
+  "/api/slack/actions",
+  express.raw({ type: "application/x-www-form-urlencoded" })
+);
+
+// Parse the body as URL-encoded after the raw middleware for use in controllers
 app.use("/api/slack/command", express.urlencoded({ extended: true }));
 app.use("/api/slack/actions", express.urlencoded({ extended: true }));
 
-// development log middleware
+// Development log middleware
 app.use((req, res, next) => {
   console.log("Received request:", req.method, req.url, req.headers);
   next();
