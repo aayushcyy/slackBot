@@ -1,4 +1,5 @@
 import axios from "axios";
+import querystring from "querystring";
 import {
   openApprovalModal,
   sendSlackMessage,
@@ -22,6 +23,11 @@ const slackEventController = async (req, res) => {
 const handleSlashCommand = async (req, res) => {
   try {
     console.log("Received Slack command:", JSON.stringify(req.body, null, 2));
+
+    // operation here
+    const parsedBody = querystring.parse(req.body.toString());
+    console.log("body is being parsed: ", parsedBody);
+
     const triggerId = req.body.trigger_id;
     const responseUrl = req.body.response_url;
 
