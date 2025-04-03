@@ -28,14 +28,14 @@ const handleSlashCommand = async (req, res) => {
     const parsedBody = querystring.parse(req.body.toString());
     console.log("body is being parsed: ", parsedBody);
 
-    const triggerId = req.body.trigger_id;
-    const responseUrl = req.body.response_url;
+    const triggerId = parsedBody.trigger_id;
+    const responseUrl = parsedBody.response_url;
 
     if (!triggerId) {
       return res.status(400).send("Missing trigger_id from Slack request");
     }
 
-    console.log("2. Slash command received:", req.body);
+    console.log("2. Slash command received:", parsedBody);
 
     res.status(200).send("Processing your request...");
 
