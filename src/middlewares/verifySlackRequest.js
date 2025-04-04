@@ -1,13 +1,17 @@
+// library for generating HMAC signature
 import crypto from "crypto";
 
+// middleware that verifies slack requests using signing secret
 const verifySlackRequest = (req, res, next) => {
   const slackSignature = req.headers["x-slack-signature"];
   const timestamp = req.headers["x-slack-request-timestamp"];
 
+  // checking required slack header
   if (!slackSignature || !timestamp) {
     return res.status(400).send("Missing Slack headers");
   }
 
+  // validating request timestamps (must be within 5mins)
   const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 300;
   if (timestamp < fiveMinutesAgo) {
     return res.status(400).send("Request timestamp too old");
@@ -24,29 +28,22 @@ const verifySlackRequest = (req, res, next) => {
   // Create signature base string
   const sigBaseString = `v0:${timestamp}:${rawBody}`;
 
-  // Log the SLACK_SIGNING_SECRET (partially for security)
-  console.log(
-    "SLACK_SIGNING_SECRET (first 5 chars):",
-    process.env.SLACK_SIGNING_SECRET?.substring(0, 5) || "undefined"
-  );
-
+  // generating hmac signature using singing secret
   const hmac = crypto.createHmac("sha256", process.env.SLACK_SIGNING_SECRET);
   hmac.update(sigBaseString);
   const mySignature = `v0=${hmac.digest("hex")}`;
 
-  console.log("Computed signature:", mySignature);
-  console.log("Expected signature:", slackSignature);
-
+  // verifying the generated signature matches Slack's signature
   if (
     !crypto.timingSafeEqual(
       Buffer.from(mySignature),
       Buffer.from(slackSignature)
     )
   ) {
-    console.error("Signature verification failed");
     return res.status(400).send("Verification failed");
   }
 
+  // proceed to next middleware/controller
   next();
 };
 
