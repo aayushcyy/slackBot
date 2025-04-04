@@ -22,8 +22,6 @@ const slackEventController = async (req, res) => {
 // 2. slash command controller
 const handleSlashCommand = async (req, res) => {
   try {
-    console.log("Received Slack command:", JSON.stringify(req.body, null, 2));
-
     // operation here
     const parsedBody = querystring.parse(req.body.toString());
     console.log("body is being parsed: ", parsedBody);

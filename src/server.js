@@ -1,17 +1,18 @@
 import express from "express";
-import "dotenv/config";
+import "dotenv/config"; // imports and configs dotenv
 import bodyParser from "body-parser";
 import slackEventRouter from "./routes/slack.route.js";
 import cors from "cors";
 
 const app = express();
 
+// enable CORS for all origins
 app.use(cors({ origin: "*", credentials: true }));
 
-// General body parsers for other routes
-app.use(express.json()); // General JSON parsing for all routes
+// parse JSON requests for all routes
+app.use(express.json());
 
-// Use express.raw() for Slack routes to capture the raw body
+// Use express.raw() for Slack routes(middlewares) to capture the raw body
 app.use(
   "/api/slack/command",
   express.raw({ type: "application/x-www-form-urlencoded" })
@@ -22,8 +23,9 @@ app.use(
 );
 
 // Parse the body as URL-encoded after the raw middleware for use in controllers
-app.use("/api/slack/command", express.urlencoded({ extended: true }));
-app.use("/api/slack/actions", express.urlencoded({ extended: true }));
+//remove this just for check as it doesn't needed
+// app.use("/api/slack/command", express.urlencoded({ extended: true }));
+// app.use("/api/slack/actions", express.urlencoded({ extended: true }));
 
 // Development log middleware
 app.use((req, res, next) => {
