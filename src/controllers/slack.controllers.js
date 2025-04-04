@@ -6,7 +6,7 @@ import {
   sendApprovalRequest,
 } from "../services/slackService.js";
 
-// 1. slack event controller
+// controller for slack event subscriptions (e.g., URL verification)
 const slackEventController = async (req, res) => {
   const { type, challenge } = req.body;
 
@@ -19,50 +19,43 @@ const slackEventController = async (req, res) => {
   return res.status(200).send("Event received!");
 };
 
-// 2. slash command controller
+// controller for handling slack slash commands (e.g., /approval-test)
 const handleSlashCommand = async (req, res) => {
   try {
-    // operation here
+    // parse the raw request body
     const parsedBody = querystring.parse(req.body.toString());
     console.log("body is being parsed: ", parsedBody);
 
     const triggerId = parsedBody.trigger_id;
     const responseUrl = parsedBody.response_url;
 
+    // validating trigger_id presence
     if (!triggerId) {
       return res.status(400).send("Missing trigger_id from Slack request");
     }
 
-    console.log("2. Slash command received:", parsedBody);
-
+    // acknowledge the request to Slack
     res.status(200).send("Processing your request...");
 
-    // open slack model
+    // open approval modal for the requester
     await openApprovalModal(triggerId, responseUrl);
 
     return res.status(200).send();
   } catch (error) {
-    console.log(`Error handling slash command: ${error}`);
     return res.status(500).send("Internal server errror");
   }
 };
 
-// 3. handling action after the approver clicks a button
+// controller for handling Slack actions (modal submissions, button clicks)
 const handleAction = async (req, res) => {
   try {
+    // parse the raw request body
     const parsedBody = querystring.parse(req.body.toString());
-
-    // log only for production
-    console.log("11. Received action payload:", req.body);
-
     const payload = JSON.parse(parsedBody.payload);
 
-    // logs only for production
-    console.log("Parsed payload:", payload);
-
-    // Handle modal submission
+    // handle modal submission (approval request form)
     if (payload.type === "view_submission") {
-      // Extract data from the modal
+      // extracting data from modal
       const values = payload.view.state.values;
       const approverId = values.approver.approver_selected.selected_user;
       const approvalText = values.approval_text.approval_text_input.value;
@@ -71,7 +64,7 @@ const handleAction = async (req, res) => {
         payload.view.private_metadata
       ).response_url;
 
-      // Send the approval request to the approver
+      // send approval request to the approver
       const { messageTs, responseUrl: returnedResponseUrl } =
         await sendApprovalRequest(
           approverId,
@@ -80,14 +73,15 @@ const handleAction = async (req, res) => {
           responseUrl
         );
 
-      // Acknowledge the modal submission to Slack
+      // close the modal
       return res.status(200).json({
-        response_action: "clear", // Closes the modal
+        response_action: "clear",
       });
     }
 
-    // Handle button actions (Approve/Reject)
+    // handle button actions (approve/reject)
     if (payload.type === "block_actions") {
+      // validate actions
       if (
         !payload.actions ||
         !Array.isArray(payload.actions) ||
@@ -107,33 +101,34 @@ const handleAction = async (req, res) => {
       const message =
         action === "approve" ? "✅ Request Approved!" : "❌ Request Rejected!";
 
-      // Notify the requester
+      // notify the requester of approval result
       try {
         await sendSlackMessage(requesterId, message);
       } catch (error) {
         console.error(`Failed to notify requester ${requesterId}:`, error);
-        // Fallback: Notify in the channel where the command was run (optional)
+        // fallback: Notify in the channel where the command was run
         await sendSlackMessage(
           payload.channel.id,
           `Failed to notify <@${requesterId}> directly. Approval result: ${message}`
         );
       }
 
-      // Update the original message in Slack
+      // update the original message in Slack
       await axios.post(responseUrl, {
         replace_original: "true",
         text: `User <@${requesterId}> has ${action}d the request.`,
       });
 
+      // notify the channel of the approval result
       await sendSlackMessage(
-        "C08KZTK985U", // The channel where the command was run
+        "C08KZTK985U", // The channel id
         `Approval result for <@${requesterId}>: ${message}`
       );
 
       return res.status(200).send();
     }
 
-    // If the payload type is neither view_submission nor block_actions
+    // handle unsupported payload types
     return res.status(400).send("Unsupported payload type");
   } catch (error) {
     console.error("Error handling actions:", error);
