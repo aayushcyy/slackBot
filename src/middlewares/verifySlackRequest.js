@@ -25,7 +25,7 @@ const verifySlackRequest = (req, res, next) => {
   // Convert the raw body Buffer to a string
   const rawBody = req.body.toString("utf8");
 
-  // Create signature base string
+  // Create signature base string of version 0 (v0) as slack uses version 0 HMAC signature
   const sigBaseString = `v0:${timestamp}:${rawBody}`;
 
   // generating hmac signature using singing secret
