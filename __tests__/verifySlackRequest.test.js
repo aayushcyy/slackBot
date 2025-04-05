@@ -1,7 +1,7 @@
 import { verifySlackRequest } from "../src/middlewares/verifySlackRequest.js";
 import crypto from "crypto";
 
-// Mock express object
+// mock express object
 const mockRequest = (
   headers = {},
   body = Buffer.from("payload=some-data")
