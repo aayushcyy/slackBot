@@ -38,6 +38,12 @@ The bot is built using Node.js and Express, with the Slack Bolt API for interact
 - **Slack Workspace**: A workspace where you have permission to install the app.
 - **Render Account**: For deployment (optional, can run locally).
 
+## Architecture Diagram
+
+Below is the architecture diagram of the Slack Approval Bot, showing the flow of requests and responses between components:
+
+![Architecture Diagram](https://app.eraser.io/workspace/b4YoR1sWqnFHCRXaOIGV?origin=share)
+
 ## Setup
 
 1. **Clone the Repository**:
